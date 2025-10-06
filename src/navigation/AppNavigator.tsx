@@ -1,21 +1,24 @@
 // src/navigation/AppNavigator.tsx
 import React, { useContext } from "react";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { MaterialIcons } from "@expo/vector-icons";
+
 import HomeScreen from "../screens/HomeScreen";
 import ProductsScreen from "../screens/ProductsScreen";
 import ReportsScreen from "../screens/ReportsScreen";
 import EntryScreen from "../screens/EntryScreen";
 import ExitScreen from "../screens/ExitScreen";
 import LoginScreen from "../screens/LoginScreen";
+import ProfileScreen from "../screens/ProfileScreen";
 import { UserContext } from "../context/UserContext";
-import { MaterialIcons } from "@expo/vector-icons";
 
-const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
 
-function TabScreens() {
+// Tab Navigator para Home e suas seções
+function HomeTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -49,11 +52,16 @@ export default function AppNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!user ? (
-          // Se não estiver logado, mostra login
+        {/* Se o usuário estiver logado, vai direto para as Tabs */}
+        {user ? (
+          <>
+            <Stack.Screen name="HomeTabs" component={HomeTabs} />
+            <Stack.Screen name="Profile" component={ProfileScreen} />
+          </>
+        ) : (
+          // Se não estiver logado, vai para Login
           <Stack.Screen name="Login" component={LoginScreen} />
-        ) : null}
-        <Stack.Screen name="Main" component={TabScreens} />
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );
