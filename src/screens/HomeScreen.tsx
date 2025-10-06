@@ -1,50 +1,50 @@
 // src/screens/HomeScreen.tsx
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  Modal,
 } from "react-native";
-import { StockContext, Product } from "../context/StockContext";
+import { StockContext } from "../context/StockContext";
 import { UserContext } from "../context/UserContext";
 import { MaterialIcons } from "@expo/vector-icons";
 
 export default function HomeScreen({ navigation }: any) {
   const { products } = useContext(StockContext);
   const { user, logout } = useContext(UserContext);
+  const [modalVisible, setModalVisible] = useState(false);
 
   // Estatísticas rápidas
   const totalProducts = products.length;
   const lowStock = products.filter((p) => p.quantity < 5).length;
-  const mostSold = [...products].sort((a, b) => b.quantity - a.quantity).slice(0, 3);
+  const mostSold = [...products]
+    .sort((a, b) => b.quantity - a.quantity)
+    .slice(0, 3);
 
-  // Produtos recentes (últimos 5 adicionados ou movimentados)
+  // Produtos recentes
   const recentProducts = products.slice(-5).reverse();
 
   const handleLogout = () => {
     logout();
+    setModalVisible(false);
     navigation.replace("Login");
   };
 
-  // Componente do Header + resumo + ações + mais vendidos
+  // Header + resumo + ações + produtos mais vendidos
   const ListHeader = () => (
     <>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.appName}>Estoque App</Text>
-        <TouchableOpacity
-          onPress={() => {
-            if (user) handleLogout();
-            else navigation.navigate("Login");
-          }}
-        >
+        <TouchableOpacity onPress={() => setModalVisible(true)}>
           <MaterialIcons name="account-circle" size={36} color="#1e3a8a" />
         </TouchableOpacity>
       </View>
 
-      {/* Resumo do estoque */}
+      {/* Resumo */}
       <View style={styles.summaryContainer}>
         <View style={[styles.summaryCard, { backgroundColor: "#2563eb" }]}>
           <Text style={styles.summaryValue}>{totalProducts}</Text>
@@ -104,28 +104,68 @@ export default function HomeScreen({ navigation }: any) {
   );
 
   return (
-    <FlatList
-      data={recentProducts}
-      keyExtractor={(item) => item.id.toString()}
-      ListHeaderComponent={ListHeader}
-      renderItem={({ item }) => (
-        <View style={styles.productCard}>
-          <Text style={styles.productName}>{item.name}</Text>
-          <Text style={styles.productQty}>{item.quantity} unidades</Text>
-        </View>
-      )}
-      contentContainerStyle={{ padding: 20, paddingBottom: 30 }}
-    />
+    <View style={{ flex: 1 }}>
+      {/* FlatList para produtos recentes */}
+      <FlatList
+        data={recentProducts}
+        keyExtractor={(item) => item.id.toString()}
+        ListHeaderComponent={ListHeader}
+        renderItem={({ item }) => (
+          <View style={styles.productCard}>
+            <Text style={styles.productName}>{item.name}</Text>
+            <Text style={styles.productQty}>{item.quantity} unidades</Text>
+          </View>
+        )}
+        contentContainerStyle={{ padding: 20, paddingBottom: 30 }}
+      />
+
+      {/* Modal de usuário */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPressOut={() => setModalVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            {user ? (
+              <>
+                <Text style={styles.modalText}>Logado como:</Text>
+                <Text style={styles.modalEmail}>{user.email}</Text>
+                <TouchableOpacity
+                  style={styles.modalButton}
+                  onPress={handleLogout}
+                >
+                  <Text style={styles.modalButtonText}>Sair</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.modalText}>Você não está logado</Text>
+                <TouchableOpacity
+                  style={styles.modalButton}
+                  onPress={() => {
+                    setModalVisible(false);
+                    navigation.navigate("Login");
+                  }}
+                >
+                  <Text style={styles.modalButtonText}>Login</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   appName: { fontSize: 26, fontWeight: "bold", color: "#1e3a8a" },
   summaryContainer: { flexDirection: "row", justifyContent: "space-between", marginBottom: 20 },
   summaryCard: { flex: 1, marginHorizontal: 5, borderRadius: 10, padding: 20, alignItems: "center" },
@@ -133,30 +173,16 @@ const styles = StyleSheet.create({
   summaryLabel: { fontSize: 14, color: "#fff", marginTop: 5, textAlign: "center" },
   section: { marginBottom: 20 },
   sectionTitle: { fontSize: 20, fontWeight: "bold", color: "#1e3a8a" },
-  productCard: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 15,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
-  },
+  productCard: { backgroundColor: "#fff", borderRadius: 10, padding: 15, flexDirection: "row", justifyContent: "space-between", marginBottom: 10, shadowColor: "#000", shadowOpacity: 0.05, shadowOffset: { width: 0, height: 2 }, shadowRadius: 4, elevation: 2 },
   productName: { fontSize: 16, fontWeight: "bold" },
   productQty: { fontSize: 16, color: "#6b7280" },
   actionsContainer: { flexDirection: "row", justifyContent: "space-between", marginBottom: 20 },
-  actionButton: {
-    flex: 1,
-    marginHorizontal: 5,
-    backgroundColor: "#2563eb",
-    borderRadius: 10,
-    padding: 15,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  actionButton: { flex: 1, marginHorizontal: 5, backgroundColor: "#2563eb", borderRadius: 10, padding: 15, alignItems: "center", justifyContent: "center" },
   actionText: { color: "#fff", marginTop: 5, fontWeight: "bold" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "center", alignItems: "center" },
+  modalContent: { width: 250, backgroundColor: "#fff", borderRadius: 10, padding: 20, alignItems: "center" },
+  modalText: { fontSize: 16, marginBottom: 10 },
+  modalEmail: { fontSize: 16, fontWeight: "bold", marginBottom: 20 },
+  modalButton: { backgroundColor: "#2563eb", padding: 10, borderRadius: 5, width: "100%", alignItems: "center" },
+  modalButtonText: { color: "#fff", fontWeight: "bold" },
 });
